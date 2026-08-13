@@ -1,1 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Банк Стабильность</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-card">
+            <h1><i class="fas fa-university"></i> Стабильность Банк</h1>
+            <div id="alertsContainer"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" class="form-control" placeholder="Введите email" required>
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="password" class="form-control" placeholder="Введите пароль" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Войти</button>
+            </form>
+        </div>
+    </div>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module">
+        import { signIn, getCurrentUser } from './js/auth.js';
+        import { showAlert } from './js/utils.js';
 
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await signIn(email, password);
+                const user = await getCurrentUser();
+                if (user.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'player.html';
+                }
+            } catch (err) {
+                showAlert('Ошибка входа: ' + err.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
