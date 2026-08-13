@@ -1,82 +1,13 @@
 import { supabase } from './supabase-client.js';
-
-export async function getMyProfile() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Не авторизован');
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-export async function transferFunds(toUsername, amount) {
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: toUser, error: findError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('username', toUsername)
-    .single();
-  if (findError || !toUser) throw new Error('Получатель не найден');
-  const { error } = await supabase.rpc('transfer_funds', {
-    p_from: user.id,
-    p_to: toUser.id,
-    p_amount: amount
-  });
-  if (error) throw error;
-}
-
-export async function payFine(fineId) {
-  const { data: { user } } = await supabase.auth.getUser();
-  const { error } = await supabase.rpc('pay_fine', {
-    p_fine_id: fineId,
-    p_user_id: user.id
-  });
-  if (error) throw error;
-}
-
-export async function repayCredit(creditId, amount) {
-  const { data: { user } } = await supabase.auth.getUser();
-  const { error } = await supabase.rpc('repay_credit', {
-    p_credit_id: creditId,
-    p_amount: amount,
-    p_user_id: user.id
-  });
-  if (error) throw error;
-}
-
-export async function getMyFines() {
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from('fines')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_paid', false);
-  if (error) throw error;
-  return data;
-}
-
-export async function getMyCredits() {
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from('credits')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_closed', false);
-  if (error) throw error;
-  return data;
-}
-
-export async function getMyTransactions() {
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .or(`from_user.eq.${user.id},to_user.eq.${user.id}`)
-    .order('created_at', { ascending: false })
-    .limit(100);
-  if (error) throw error;
-  return data;
-}
+async function me(){const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Не авторизован');return user;}
+export async function getMyProfile(){const user=await me();const{data,error}=await supabase.from('profiles').select('*').eq('id',user.id).single();if(error)throw error;return data;}
+export async function getMyNotifications(){const user=await me();const{data,error}=await supabase.from('bank_notifications').select('*').eq('user_id',user.id).order('created_at',{ascending:false}).limit(100);if(error)throw error;return data||[];}
+export async function markNotificationRead(id){const{error}=await supabase.from('bank_notifications').update({is_read:true}).eq('id',id);if(error)throw error;}
+export async function markAllNotificationsRead(){const user=await me();const{error}=await supabase.from('bank_notifications').update({is_read:true}).eq('user_id',user.id).eq('is_read',false);if(error)throw error;}
+async function bankNotice(title,message,kind='info'){const user=await me();const{error}=await supabase.from('bank_notifications').insert({user_id:user.id,title,message,kind});if(error)throw error;}
+export async function transferFunds(toUsername,amount){const user=await me();const{data:toUser,error:findError}=await supabase.from('profiles').select('id,username').eq('username',toUsername).single();if(findError||!toUser)throw new Error('Получатель не найден');const{error}=await supabase.rpc('transfer_funds',{p_from:user.id,p_to:toUser.id,p_amount:amount});if(error)throw error;await supabase.from('bank_notifications').insert({user_id:toUser.id,title:'Перевод получен',message:`Вам поступил перевод на сумму ${Number(amount).toLocaleString('ru-RU')} ₽.`,kind:'success'});await bankNotice('Перевод выполнен',`Вы перевели ${Number(amount).toLocaleString('ru-RU')} ₽ пользователю @${toUsername}.`,'success');}
+export async function payFine(fineId){const user=await me();const{data:fine}=await supabase.from('fines').select('amount,reason').eq('id',fineId).eq('user_id',user.id).single();const{error}=await supabase.rpc('pay_fine',{p_fine_id:fineId,p_user_id:user.id});if(error)throw error;await bankNotice('Штраф оплачен',`Вы оплатили штраф на сумму ${Number(fine?.amount||0).toLocaleString('ru-RU')} ₽. ${fine?.reason||''}`,'success');}
+export async function repayCredit(creditId,amount){const user=await me();const{data:credit}=await supabase.from('credits').select('remaining,interest_rate').eq('id',creditId).eq('user_id',user.id).single();const{error}=await supabase.rpc('repay_credit',{p_credit_id:creditId,p_amount:amount,p_user_id:user.id});if(error)throw error;await bankNotice('Платёж по кредиту',`Вы внесли ${Number(amount).toLocaleString('ru-RU')} ₽ в погашение кредита. Остаток: ${Math.max(0,Number(credit?.remaining||0)-Number(amount)).toLocaleString('ru-RU')} ₽.`,'success');}
+export async function getMyFines(){const user=await me();const{data,error}=await supabase.from('fines').select('*').eq('user_id',user.id).eq('is_paid',false).order('created_at',{ascending:false});if(error)throw error;return data||[];}
+export async function getMyCredits(){const user=await me();const{data,error}=await supabase.from('credits').select('*').eq('user_id',user.id).eq('is_closed',false).order('created_at',{ascending:false});if(error)throw error;return data||[];}
+export async function getMyTransactions(){const user=await me();const{data,error}=await supabase.from('transactions').select('*').or(`from_user.eq.${user.id},to_user.eq.${user.id}`).order('created_at',{ascending:false}).limit(100);if(error)throw error;return data||[];}
