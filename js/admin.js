@@ -18,3 +18,22 @@ export async function markNotificationRead(id){ return rpc('mark_bank_notificati
 export async function paySalary(id,job,params={}){ const amount=calculateSalary(job,params); if(amount<=0)throw Error('Не удалось рассчитать зарплату'); const j=SALARY_JOBS[job]; return rpc('admin_issue_salary',{p_player_id:id,p_job_key:job,p_job_title:j?.[1]||job,p_amount:amount,p_units:Number(params.orders||1),p_parameters:params}); }
 export const SALARY_JOBS={mine:['Обычные работы','🦺 Шахта','fixed',300],courier:['Обычные работы','🛵 Курьер','orders',80,9],mail:['Обычные работы','📪 Почта','fixed',1000],taxi:['Обычные работы','🚕 Такси','taxi',180,7],bus:['Обычные работы','🚌 Автобус','bus',1600],garbage:['Обычные работы','🚮 Мусоровоз','fixed',2700],delivery:['Обычные работы','🚚 Развозчик','delivery',1400],trucker:['Обычные работы','🚛 Дальнобойщик','contract',0],ess_driver:['ЕСС','🚒 Водитель','fixed',1500],ess_firefighter:['ЕСС','🚒 Пожарный','fixed',1800],ess_rescuer:['ЕСС','🚒 Спасатель','fixed',2200],ess_inspector:['ЕСС','🚒 Инспектор','fixed',2500],ess_paramedic:['ЕСС','🚒 Фельдшер','fixed',2800],ess_doctor:['ЕСС','🚒 Врач','fixed',3200],ess_narcologist:['ЕСС','🚒 Нарколог','fixed',3600],ess_surgeon:['ЕСС','🚒 Хирург','fixed',4000],mvd_private:['МВД','🚓 Рядовой','fixed',1500],mvd_junior_sergeant:['МВД','🚓 Мл. сержант','fixed',1800],mvd_sergeant:['МВД','🚓 Сержант','fixed',2100],mvd_master_sergeant:['МВД','🚓 Старшина','fixed',2400],mvd_warrant:['МВД','🚓 Прапорщик','fixed',2700],mvd_junior_lieutenant:['МВД','🚓 Мл. лейтенант','fixed',3000],mvd_lieutenant:['МВД','🚓 Лейтенант','fixed',3300],mvd_captain:['МВД','🚓 Капитан','fixed',3600],mvd_major:['МВД','🚓 Майор','fixed',3900],mvd_lieutenant_colonel:['МВД','🚓 Подполковник','fixed',4200],mil_private:['Воинская часть','🪖 Рядовой','fixed',500],mil_corporal:['Воинская часть','🪖 Ефрейтор','fixed',800],mil_junior_sergeant:['Воинская часть','🪖 Мл. сержант','fixed',1100],mil_sergeant:['Воинская часть','🪖 Сержант','fixed',2000],mil_senior_sergeant:['Воинская часть','🪖 Ст. сержант','fixed',2300],mil_master_sergeant:['Воинская часть','🪖 Старшина','fixed',2600],mil_warrant:['Воинская часть','🪖 Прапорщик','fixed',2900],mil_junior_lieutenant:['Воинская часть','🪖 Мл. лейтенант','fixed',3200],mil_lieutenant:['Воинская часть','🪖 Лейтенант','fixed',3500]};
 export function calculateSalary(job,p={}){const j=SALARY_JOBS[job];if(!j)return 0;const t=j[2];if(t==='fixed')return j[3];if(t==='orders')return Math.min(j[4],Math.max(0,Number(p.orders||0)))*j[3];if(t==='contract')return Math.max(0,Number(p.contract_amount||0));if(t==='taxi'){let n=Math.min(7,Math.max(0,Number(p.orders||0)));let a=n*180+({low:0,medium:300,high:600,business:1200}[p.vehicle_class]??0);return Math.round(a)}if(t==='bus')return Math.round(1600*({none:1,vip_interior:1.3,soundproof:1.4,climate_monitors:1.5}[p.tuning]??1));if(t==='delivery')return Math.round(1400*({none:1,trunk:1.2,air_suspension:1.5}[p.tuning]??1));return 0; }
+
+// Global close handler: works for every modal/overlay that uses a close button.
+document.addEventListener('click',event=>{
+  const close=event.target.closest('#close,.modal-close,[data-close-modal]');
+  if(close){
+    event.preventDefault();
+    event.stopPropagation();
+    const modal=close.closest('.modal,[role="dialog"]');
+    if(modal){modal.classList.remove('open');modal.style.display='none';}
+    document.body.classList.remove('modal-open');
+  }
+  if(event.target.classList.contains('modal')){
+    event.target.classList.remove('open');
+    event.target.style.display='none';
+  }
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape') document.querySelectorAll('.modal.open,.modal[style*="display: flex"],.modal[style*="display:flex"]').forEach(m=>{m.classList.remove('open');m.style.display='none';});
+});
