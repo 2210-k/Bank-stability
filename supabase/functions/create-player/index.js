@@ -17,7 +17,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Создаём пользователя через Admin API
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -32,8 +31,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Триггер автоматически создаст профиль в таблице profiles
-    // (если он правильно настроен)
     return new Response(
       JSON.stringify({ user: data.user, message: 'Пользователь создан' }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
