@@ -1,1 +1,26 @@
-
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>...</header>
+        <div id="alertsContainer"></div>
+        <div id="clientsList"></div>
+        <!-- Формы для операций (штраф, кредит, зарплата) -->
+        <!-- ... -->
+    </div>
+    <script type="module">
+        import { supabase } from './js/supabase-client.js';
+        import { getCurrentUser } from './js/auth.js';
+        import { getAllPlayers, updatePlayerProfile, depositFunds, withdrawFunds, issueFine, cancelFine, issueCredit, paySalary, getUserFines, getUserCredits, getUserTransactions } from './js/admin.js';
+        import { formatCurrency, showAlert } from './js/utils.js';
+        // ... остальная логика отрисовки
+    </script>
+</body>
+</html>
