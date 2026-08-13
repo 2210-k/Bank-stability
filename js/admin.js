@@ -1,35 +1,16 @@
 import { supabase } from './supabase-client.js';
 
-// Получить всех игроков
+// ---------- Получить всех игроков ----------
 export async function getAllPlayers() {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('role', 'player')   // <-- только игроки
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
 }
 
-// ---------- Удаление игрока (вместе с профилем) ----------
-export async function deletePlayer(userId) {
-  // Удаляем из auth.users (каскадно удалит и профиль, и всё связанное)
-  const { error } = await supabase.auth.admin.deleteUser(userId);
-  if (error) throw error;
-}
-
-// ---------- Получить список штрафов для игрока (включая оплаченные) ----------
-export async function getAllFinesForUser(userId) {
-  const { data, error } = await supabase
-    .from('fines')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-// Обновить профиль
+// ---------- Обновить профиль игрока ----------
 export async function updatePlayerProfile(userId, updates) {
   const { error } = await supabase
     .from('profiles')
@@ -38,7 +19,7 @@ export async function updatePlayerProfile(userId, updates) {
   if (error) throw error;
 }
 
-// Пополнение баланса
+// ---------- Пополнение баланса ----------
 export async function depositFunds(userId, amount, description = 'Пополнение админом') {
   const { error } = await supabase.rpc('deposit_funds', {
     p_user_id: userId,
@@ -48,7 +29,7 @@ export async function depositFunds(userId, amount, description = 'Пополне
   if (error) throw error;
 }
 
-// Снятие средств
+// ---------- Снятие средств ----------
 export async function withdrawFunds(userId, amount, description = 'Снятие админом') {
   const { error } = await supabase.rpc('withdraw_funds', {
     p_user_id: userId,
@@ -58,7 +39,7 @@ export async function withdrawFunds(userId, amount, description = 'Снятие 
   if (error) throw error;
 }
 
-// Выдать штраф
+// ---------- Выдать штраф ----------
 export async function issueFine(userId, amount, reason, adminId) {
   const { error } = await supabase.rpc('issue_fine', {
     p_user_id: userId,
@@ -69,7 +50,7 @@ export async function issueFine(userId, amount, reason, adminId) {
   if (error) throw error;
 }
 
-// Отменить штраф
+// ---------- Отменить штраф ----------
 export async function cancelFine(fineId, adminId) {
   const { error } = await supabase.rpc('cancel_fine', {
     p_fine_id: fineId,
@@ -78,7 +59,7 @@ export async function cancelFine(fineId, adminId) {
   if (error) throw error;
 }
 
-// Выдать кредит
+// ---------- Выдать кредит ----------
 export async function issueCredit(userId, amount, interest) {
   const { error } = await supabase.rpc('issue_credit', {
     p_user_id: userId,
@@ -88,9 +69,9 @@ export async function issueCredit(userId, amount, interest) {
   if (error) throw error;
 }
 
-// Начислить зарплату
+// ---------- Начислить зарплату (новая функция, без привязки к работе) ----------
 export async function paySalary(userId, job, params) {
-  const { data, error } = await supabase.rpc('calculate_and_pay_salary', {
+  const { data, error } = await supabase.rpc('pay_salary_direct', {
     p_user_id: userId,
     p_job: job,
     p_params: params
@@ -99,7 +80,7 @@ export async function paySalary(userId, job, params) {
   return data.amount;
 }
 
-// Получить штрафы пользователя
+// ---------- Получить активные штрафы игрока ----------
 export async function getUserFines(userId) {
   const { data, error } = await supabase
     .from('fines')
@@ -110,7 +91,7 @@ export async function getUserFines(userId) {
   return data;
 }
 
-// Получить кредиты пользователя
+// ---------- Получить активные кредиты игрока ----------
 export async function getUserCredits(userId) {
   const { data, error } = await supabase
     .from('credits')
@@ -121,7 +102,7 @@ export async function getUserCredits(userId) {
   return data;
 }
 
-// Получить историю транзакций пользователя
+// ---------- Получить историю транзакций игрока ----------
 export async function getUserTransactions(userId) {
   const { data, error } = await supabase
     .from('transactions')
@@ -133,13 +114,29 @@ export async function getUserTransactions(userId) {
   return data;
 }
 
-// ---------- СОЗДАНИЕ ИГРОКА (через Edge Function) ----------
+// ---------- Получить ВСЕ штрафы игрока (включая оплаченные) ----------
+export async function getAllFinesForUser(userId) {
+  const { data, error } = await supabase
+    .from('fines')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+// ---------- Удалить игрока (из auth.users, каскадно удалит профиль) ----------
+export async function deletePlayer(userId) {
+  const { error } = await supabase.auth.admin.deleteUser(userId);
+  if (error) throw error;
+}
+
+// ---------- Создание игрока через Edge Function ----------
 export async function createPlayer(email, password, username) {
   const { data, error } = await supabase.functions.invoke('create-player', {
     body: { email, password, username }
   });
   if (error) {
-    // Если функция ещё не развёрнута, выведем понятную ошибку
     if (error.message?.includes('function not found')) {
       throw new Error('Edge Function "create-player" не развёрнута. Разверните её через supabase functions deploy create-player');
     }
