@@ -11,6 +11,24 @@ export async function getAllPlayers() {
   return data;
 }
 
+// ---------- Удаление игрока (вместе с профилем) ----------
+export async function deletePlayer(userId) {
+  // Удаляем из auth.users (каскадно удалит и профиль, и всё связанное)
+  const { error } = await supabase.auth.admin.deleteUser(userId);
+  if (error) throw error;
+}
+
+// ---------- Получить список штрафов для игрока (включая оплаченные) ----------
+export async function getAllFinesForUser(userId) {
+  const { data, error } = await supabase
+    .from('fines')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
 // Обновить профиль
 export async function updatePlayerProfile(userId, updates) {
   const { error } = await supabase
