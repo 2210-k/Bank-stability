@@ -5,6 +5,7 @@ export async function getAllPlayers() {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
+    .eq('role', 'player')   // <-- только игроки
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
