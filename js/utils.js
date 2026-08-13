@@ -15,6 +15,6 @@ export function showAlert(message, type = 'success') {
     container.innerHTML = html;
     setTimeout(() => container.innerHTML = '', 5000);
   } else {
-    alert(message); // fallback
+    alert(message);
   }
 }
