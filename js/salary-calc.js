@@ -1,4 +1,3 @@
-// Экспортируем списки работ и должностей для построения UI
 export const regularJobs = [
   { name: 'Шахта', salary: 300, type: 'fixed', emoji: '⛏️' },
   { name: 'Курьер', salary: { perOrder: 80, maxOrders: 9 }, type: 'variable', emoji: '🛵' },
