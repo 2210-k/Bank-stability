@@ -8,7 +8,8 @@ export async function issueFine(id,a,r){const{error}=await supabase.rpc('admin_i
 export async function cancelFine(id){const s=await supabase.auth.getUser();const{error}=await supabase.rpc('cancel_fine',{p_fine_id:id,p_admin_id:s.data?.user?.id});if(error)throw error}
 export async function issueCredit(id,a,i=0){const{error}=await supabase.rpc('issue_credit',{p_user_id:id,p_amount:Number(a),p_interest:Number(i)});if(error)throw error}
 
-// Единый вызов зарплаты: сигнатура RPC в Supabase:
+// BANK-STABILITY 3.0: this is the ONLY salary RPC payload.
+// Supabase identity arguments:
 // (numeric, text, uuid, text, jsonb, integer, text)
 export async function paySalary(id,job,params={}){
   const positionMap={
@@ -25,6 +26,7 @@ export async function paySalary(id,job,params={}){
     vip_interior:tuning==='vip_interior',soundproof:tuning==='soundproof',climate_monitors:tuning==='climate_monitors',
     trunk:tuning==='trunk',air_suspension:tuning==='air_suspension'
   };
+  // Keep all seven named arguments exactly aligned with the PostgreSQL function.
   const payload={
     p_contract_amount:Number(params.contract_amount||0),
     p_job,
