@@ -7,22 +7,37 @@ export async function getAllPlayers() {
 }
 
 export async function updatePlayerProfile(userId, updates) {
-  const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+  const allowed = ['full_name', 'birth_date', 'passport_number', 'username', 'status'];
+  const safeUpdates = Object.fromEntries(Object.entries(updates).filter(([key]) => allowed.includes(key)));
+  const { error } = await supabase.from('profiles').update(safeUpdates).eq('id', userId);
   if (error) throw error;
 }
 
 export async function depositFunds(userId, amount, description = 'Пополнение админом') {
-  const { error } = await supabase.rpc('deposit_funds', { p_user_id: userId, p_amount: amount, p_description: description });
+  const { error } = await supabase.rpc('admin_balance_operation', {
+    p_amount: Math.abs(Number(amount)),
+    p_description: description,
+    p_player_id: userId
+  });
   if (error) throw error;
 }
 
 export async function withdrawFunds(userId, amount, description = 'Снятие админом') {
-  const { error } = await supabase.rpc('withdraw_funds', { p_user_id: userId, p_amount: amount, p_description: description });
+  const { error } = await supabase.rpc('admin_balance_operation', {
+    p_amount: -Math.abs(Number(amount)),
+    p_description: description,
+    p_player_id: userId
+  });
   if (error) throw error;
 }
 
 export async function issueFine(userId, amount, reason, adminId) {
-  const { error } = await supabase.rpc('issue_fine', { p_user_id: userId, p_amount: amount, p_reason: reason, p_admin_id: adminId });
+  const { error } = await supabase.rpc('admin_issue_penalty', {
+    p_amount: Number(amount),
+    p_player_id: userId,
+    p_reason: reason,
+    p_title: reason || 'Штраф'
+  });
   if (error) throw error;
 }
 
