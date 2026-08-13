@@ -1,6 +1,5 @@
 import { supabase } from './supabase-client.js';
 
-// Получить свой профиль
 export async function getMyProfile() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Не авторизован');
@@ -13,10 +12,8 @@ export async function getMyProfile() {
   return data;
 }
 
-// Перевод другому игроку
 export async function transferFunds(toUsername, amount) {
   const { data: { user } } = await supabase.auth.getUser();
-  // Сначала найдём ID получателя по username
   const { data: toUser, error: findError } = await supabase
     .from('profiles')
     .select('id')
@@ -31,7 +28,6 @@ export async function transferFunds(toUsername, amount) {
   if (error) throw error;
 }
 
-// Оплатить штраф
 export async function payFine(fineId) {
   const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase.rpc('pay_fine', {
@@ -41,7 +37,6 @@ export async function payFine(fineId) {
   if (error) throw error;
 }
 
-// Погасить кредит
 export async function repayCredit(creditId, amount) {
   const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase.rpc('repay_credit', {
@@ -52,7 +47,6 @@ export async function repayCredit(creditId, amount) {
   if (error) throw error;
 }
 
-// Получить свои штрафы
 export async function getMyFines() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
@@ -64,7 +58,6 @@ export async function getMyFines() {
   return data;
 }
 
-// Получить свои кредиты
 export async function getMyCredits() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
@@ -76,7 +69,6 @@ export async function getMyCredits() {
   return data;
 }
 
-// Получить свою историю
 export async function getMyTransactions() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
