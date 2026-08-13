@@ -3,26 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Личный кабинет</title>
+    <title>Личный кабинет — Стабильность Банк</title>
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <div class="animated-bg"></div>
     <div class="container">
-        <header>...</header>
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🏦</div>
+                <div>
+                    <h1>Стабильность <span>Банк</span></h1>
+                    <p><i class="fas fa-user"></i> Личный кабинет</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+            </div>
+        </header>
+
         <div id="alertsContainer"></div>
-        <div id="profileInfo"></div>
-        <div id="finesList"></div>
-        <div id="creditsList"></div>
-        <div id="transferForm">...</div>
-        <div id="historyList"></div>
+
+        <!-- Информация о профиле -->
+        <div class="clients-list" id="profileCard">
+            <div style="text-align:center;padding:20px;">Загрузка...</div>
+        </div>
+
+        <!-- Баланс и кнопки -->
+        <div class="operations-panel" style="display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;">
+            <div>
+                <h2>💰 Баланс: <span id="balanceDisplay">0 ₽</span></h2>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-primary" id="refreshBtn"><i class="fas fa-sync-alt"></i> Обновить</button>
+            </div>
+        </div>
+
+        <!-- Активные штрафы -->
+        <div class="operations-panel">
+            <h3><i class="fas fa-gavel"></i> Мои штрафы</h3>
+            <div id="finesList"><div style="padding:10px;">Загрузка...</div></div>
+        </div>
+
+        <!-- Активные кредиты -->
+        <div class="operations-panel">
+            <h3><i class="fas fa-hand-holding-usd"></i> Мои кредиты</h3>
+            <div id="creditsList"><div style="padding:10px;">Загрузка...</div></div>
+        </div>
+
+        <!-- Перевод средств -->
+        <div class="operations-panel">
+            <h3><i class="fas fa-exchange-alt"></i> Перевод другому игроку</h3>
+            <div class="form-group">
+                <label>Игрок (username)</label>
+                <input type="text" id="transferUsername" class="form-control" placeholder="Введите username получателя">
+            </div>
+            <div class="form-group">
+                <label>Сумма</label>
+                <input type="number" id="transferAmount" class="form-control" placeholder="Сумма перевода">
+            </div>
+            <button class="btn btn-success" id="transferBtn"><i class="fas fa-paper-plane"></i> Перевести</button>
+        </div>
+
+        <!-- История операций -->
+        <div class="operations-panel">
+            <h3><i class="fas fa-history"></i> История операций</h3>
+            <div id="historyContainer"><div style="padding:10px;">Загрузка...</div></div>
+        </div>
     </div>
+
     <script type="module">
         import { supabase } from './js/supabase-client.js';
-        import { getCurrentUser } from './js/auth.js';
+        import { getCurrentUser, signOut } from './js/auth.js';
         import { getMyProfile, getMyFines, getMyCredits, getMyTransactions, transferFunds, payFine, repayCredit } from './js/player.js';
         import { formatCurrency, showAlert } from './js/utils.js';
-        // ... логика
+
+        // ---------- Проверка авторизации ----------
+        const user = await getCurrentUser();
+        if (!user || user.role !== 'player') {
+            window.location.href = 'index.html';
+        }
+
+        // ---------- Выход ----------
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await signOut();
+            window.location.href = 'index.html';
+        });
+
+        // ---------- Загрузка данных ----------
+        async function loadPlayerData() {
+            try {
+                // Профиль
+                const profile = await getMyProfile();
+                document.getElementById('balanceDisplay').textContent = formatCurrency(profile.balance || 0);
+
+                // Штрафы
+                const fines = await getMyFines();
+                renderFines(fines);
+
+                // Кредиты
+                const credits = await getMyCredits();
+                renderCredits(credits);
+
+                // История
+                const transactions = await getMyTransactions();
+                renderHistory(transactions);
+
+                // Карточка профиля
+                document.getElementById('profileCard').innerHTML = `
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
+                        <div><strong>👤 Имя:</strong> ${profile.username || '—'}</div>
+                        <div><strong>💼 Работа:</strong> ${profile.job || '—'}</div>
+                        <div><strong>📅 Регистрация:</strong> ${new Date(profile.created_at).toLocaleDateString()}</div>
+                    </div>
+                `;
+            } catch (err) {
+                showAlert('Ошибка загрузки данных: ' + err.message, 'error');
+            }
+        }
+
+        function renderFines(fines) {
+            const container = document.getElementById('finesList');
+            if (!fines.length) {
+                container.innerHTML = '<div style="padding:10px;">✅ Нет активных штрафов</div>';
+                return;
+            }
+            container.innerHTML = fines.map(f => `
+                <div style="background:#fff5f5;border-radius:12px;padding:15px;margin-bottom:10px;border-left:4px solid #dc3545;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;">
+                    <div>
+                        <strong>${formatCurrency(f.amount)}</strong>
+                        <div style="font-size:0.9rem;color:#6c757d;">${f.reason || 'Без причины'} (${new Date(f.created_at).toLocaleDateString()})</div>
+                    </div>
+                    <button class="btn btn-sm btn-danger" data-fine-id="${f.id}">Оплатить</button>
+                </div>
+            `).join('');
+
+            // Обработчики оплаты штрафов
+            container.querySelectorAll('button[data-fine-id]').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const fineId = parseInt(this.dataset.fineId);
+                    try {
+                        await payFine(fineId);
+                        showAlert('✅ Штраф оплачен', 'success');
+                        loadPlayerData();
+                    } catch (err) {
+                        showAlert('Ошибка: ' + err.message, 'error');
+                    }
+                });
+            });
+        }
+
+        function renderCredits(credits) {
+            const container = document.getElementById('creditsList');
+            if (!credits.length) {
+                container.innerHTML = '<div style="padding:10px;">✅ Нет активных кредитов</div>';
+                return;
+            }
+            container.innerHTML = credits.map(c => `
+                <div style="background:#fffde7;border-radius:12px;padding:15px;margin-bottom:10px;border-left:4px solid #ffc107;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;">
+                    <div>
+                        <strong>${formatCurrency(c.remaining)}</strong> (остаток)
+                        <div style="font-size:0.9rem;color:#6c757d;">Сумма: ${formatCurrency(c.amount)} под ${c.interest_rate}%</div>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <input type="number" class="form-control" style="width:120px;padding:8px;" placeholder="Сумма" id="repayInput-${c.id}">
+                        <button class="btn btn-sm btn-success" data-credit-id="${c.id}">Погасить</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Обработчики погашения кредитов
+            container.querySelectorAll('button[data-credit-id]').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const creditId = parseInt(this.dataset.creditId);
+                    const input = document.getElementById(`repayInput-${creditId}`);
+                    const amount = parseFloat(input.value);
+                    if (!amount || amount <= 0) return showAlert('Введите сумму', 'error');
+                    try {
+                        await repayCredit(creditId, amount);
+                        showAlert(`✅ Погашено ${formatCurrency(amount)}`, 'success');
+                        loadPlayerData();
+                    } catch (err) {
+                        showAlert('Ошибка: ' + err.message, 'error');
+                    }
+                });
+            });
+        }
+
+        function renderHistory(transactions) {
+            const container = document.getElementById('historyContainer');
+            if (!transactions.length) {
+                container.innerHTML = '<div style="padding:10px;">📭 История пуста</div>';
+                return;
+            }
+            container.innerHTML = `
+                <table class="history-table">
+                    <thead><tr><th>Дата</th><th>Сумма</th><th>Тип</th><th>Описание</th></tr></thead>
+                    <tbody>
+                        ${transactions.map(t => `
+                            <tr>
+                                <td>${new Date(t.created_at).toLocaleString()}</td>
+                                <td class="${t.from_user === user.id ? 'negative' : 'positive'}">
+                                    ${t.from_user === user.id ? '-' : '+'} ${formatCurrency(Math.abs(t.amount))}
+                                </td>
+                                <td>${t.type}</td>
+                                <td>${t.description || '—'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // ---------- Перевод ----------
+        document.getElementById('transferBtn').addEventListener('click', async () => {
+            const username = document.getElementById('transferUsername').value.trim();
+            const amount = parseFloat(document.getElementById('transferAmount').value);
+            if (!username) return showAlert('Введите username получателя', 'error');
+            if (!amount || amount <= 0) return showAlert('Введите корректную сумму', 'error');
+            try {
+                await transferFunds(username, amount);
+                showAlert(`✅ Переведено ${formatCurrency(amount)} игроку ${username}`, 'success');
+                document.getElementById('transferAmount').value = '';
+                loadPlayerData();
+            } catch (err) {
+                showAlert('Ошибка: ' + err.message, 'error');
+            }
+        });
+
+        // ---------- Обновление ----------
+        document.getElementById('refreshBtn').addEventListener('click', loadPlayerData);
+
+        // ---------- Загрузка при старте ----------
+        await loadPlayerData();
     </script>
 </body>
 </html>
