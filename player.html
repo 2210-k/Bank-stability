@@ -1,1 +1,28 @@
-
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>...</header>
+        <div id="alertsContainer"></div>
+        <div id="profileInfo"></div>
+        <div id="finesList"></div>
+        <div id="creditsList"></div>
+        <div id="transferForm">...</div>
+        <div id="historyList"></div>
+    </div>
+    <script type="module">
+        import { supabase } from './js/supabase-client.js';
+        import { getCurrentUser } from './js/auth.js';
+        import { getMyProfile, getMyFines, getMyCredits, getMyTransactions, transferFunds, payFine, repayCredit } from './js/player.js';
+        import { formatCurrency, showAlert } from './js/utils.js';
+        // ... логика
+    </script>
+</body>
+</html>
