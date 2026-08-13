@@ -1,5 +1,5 @@
 -- Bank-stability 3.0 — серверная система выдачи зарплаты.
--- Зарплата НЕ хранится в банковском профиле и не зависит от поля job.
+-- Работа/организация/должность НЕ хранятся в profiles.
 
 create table if not exists public.salary_rates (
   job_key text primary key,
@@ -13,14 +13,14 @@ create table if not exists public.salary_rates (
 );
 
 insert into public.salary_rates(job_key,title,category,base_amount,unit_label,per_unit,max_units) values
- ('mine','Шахта','regular',500,null,0,1),
+ ('mine','Шахта','regular',300,null,0,1),
  ('courier','Курьер','regular',0,'за заказ',80,9),
- ('mail','Почта','regular',0,'за заказ',110,9),
+ ('mail','Почта','regular',1000,null,0,1),
  ('taxi','Такси','regular',0,'за клиента',180,7),
- ('bus','Автобус','regular',650,null,0,1),
- ('garbage','Мусоровоз','regular',750,null,0,1),
- ('delivery','Развозчик','regular',900,null,0,1),
- ('trucker','Дальнобойщик','regular',1200,null,0,1),
+ ('bus','Автобус','regular',1600,null,0,1),
+ ('garbage','Мусоровоз','regular',2700,null,0,1),
+ ('delivery','Развозчик','regular',1400,null,0,1),
+ ('trucker','Дальнобойщик','regular',0,'контракт',0,1),
  ('ess','ЕСС','government',1800,null,0,1),
  ('mvd','МВД','government',2200,null,0,1)
 on conflict (job_key) do update set
@@ -73,6 +73,7 @@ declare
   v_old_balance numeric(14,2);
   v_new_balance numeric(14,2);
   v_payment_id bigint;
+  v_multiplier numeric := coalesce((p_params->>'multiplier')::numeric,1);
 begin
   if not public.is_bank_admin() then
     raise exception 'Недостаточно прав: зарплату может выдавать только администратор';
@@ -91,27 +92,26 @@ begin
     raise exception 'Нельзя выдать зарплату: аккаунт игрока имеет статус %', p.status;
   end if;
 
-  if r.per_unit > 0 then
+  if r.job_key = 'trucker' then
+    v_amount := v_contract;
+    v_units := 1;
+  elsif r.per_unit > 0 then
     v_units := least(v_units, greatest(1,r.max_units));
     v_amount := r.base_amount + r.per_unit * v_units;
-  elsif r.job_key = 'custom' then
-    v_amount := v_contract;
   else
     v_units := 1;
     v_amount := r.base_amount;
   end if;
 
-  -- Дополнительные коэффициенты из параметров разрешены только как серверно ограниченный multiplier.
-  if coalesce((p_params->>'multiplier')::numeric,1) < 0.5 or coalesce((p_params->>'multiplier')::numeric,1) > 2 then
+  if v_multiplier < 0.5 or v_multiplier > 2 then
     raise exception 'Недопустимый коэффициент зарплаты';
   end if;
-  v_amount := round(v_amount * coalesce((p_params->>'multiplier')::numeric,1), 2);
+  v_amount := round(v_amount * v_multiplier, 2);
 
   if v_amount <= 0 then raise exception 'Сумма зарплаты должна быть больше нуля'; end if;
 
   v_old_balance := coalesce(p.balance,0);
   v_new_balance := v_old_balance + v_amount;
-
   update public.profiles set balance = v_new_balance where id = p_user_id;
 
   insert into public.salary_payments(player_id,admin_id,job_key,job_title,amount,units,params)
@@ -119,17 +119,11 @@ begin
   returning id into v_payment_id;
 
   insert into public.transactions(from_user,to_user,amount,type,description)
-  values(null,p_user_id,v_amount,'salary','Зарплата: ' || r.title || ' (#' || v_payment_id || ')');
+  values(auth.uid(),p_user_id,v_amount,'salary','Зарплата: ' || r.title || ' (#' || v_payment_id || ')');
 
   return jsonb_build_object(
-    'payment_id',v_payment_id,
-    'player_id',p_user_id,
-    'job',r.job_key,
-    'title',r.title,
-    'amount',v_amount,
-    'units',v_units,
-    'old_balance',v_old_balance,
-    'new_balance',v_new_balance
+    'payment_id',v_payment_id,'player_id',p_user_id,'job',r.job_key,'title',r.title,
+    'amount',v_amount,'units',v_units,'old_balance',v_old_balance,'new_balance',v_new_balance
   );
 end;
 $$;
