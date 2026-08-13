@@ -1,64 +1,64 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход — Стабильность Банк</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — Стабильность Банк</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="animated-bg"></div>
-    <div class="container">
-        <div class="login-card">
-            <div class="logo" style="justify-content:center;margin-bottom:30px;">
-                <div class="logo-icon">🏦</div>
-                <h1>Стабильность <span>Банк</span></h1>
-            </div>
-            <div id="alertsContainer"></div>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label><i class="fas fa-envelope"></i> Email</label>
-                    <input type="email" id="email" class="form-control" placeholder="Введите email" required>
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-lock"></i> Пароль</label>
-                    <input type="password" id="password" class="form-control" placeholder="Введите пароль" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">
-                    <i class="fas fa-sign-in-alt"></i> Войти
-                </button>
-            </form>
-        </div>
+<div class="animated-bg"></div>
+<div class="container">
+  <div class="login-card">
+    <div class="logo" style="justify-content:center;margin-bottom:30px;">
+      <div class="logo-icon">🏦</div>
+      <h1>Стабильность <span>Банк</span></h1>
     </div>
+    <div id="alertsContainer"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label><i class="fas fa-envelope"></i> Email</label>
+        <input type="email" id="email" class="form-control" placeholder="Введите email" required>
+      </div>
+      <div class="form-group">
+        <label><i class="fas fa-lock"></i> Пароль</label>
+        <input type="password" id="password" class="form-control" placeholder="Введите пароль" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">
+        <i class="fas fa-sign-in-alt"></i> Войти
+      </button>
+    </form>
+  </div>
+</div>
 
-    <script type="module">
-        import { signIn, getCurrentUser } from './js/auth.js';
-        import { showAlert } from './js/utils.js';
+<script type="module">
+  import { signIn, getCurrentUser } from './js/auth.js';
+  import { showAlert } from './js/utils.js';
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            if (!email || !password) {
-                showAlert('Заполните все поля', 'error');
-                return;
-            }
-            try {
-                await signIn(email, password);
-                const user = await getCurrentUser();
-                if (user?.role === 'admin') {
-                    window.location.href = 'admin.html';
-                } else if (user?.role === 'player') {
-                    window.location.href = 'player.html';
-                } else {
-                    showAlert('Неизвестная роль пользователя', 'error');
-                }
-            } catch (err) {
-                showAlert('Ошибка входа: ' + err.message, 'error');
-            }
-        });
-    </script>
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (!email || !password) {
+      showAlert('Заполните все поля', 'error');
+      return;
+    }
+    try {
+      await signIn(email, password);
+      const user = await getCurrentUser();
+      if (user?.role === 'admin') {
+        window.location.href = 'admin.html';
+      } else if (user?.role === 'player') {
+        window.location.href = 'player.html';
+      } else {
+        showAlert('Неизвестная роль пользователя', 'error');
+      }
+    } catch (err) {
+      showAlert('Ошибка входа: ' + err.message, 'error');
+    }
+  });
+</script>
 </body>
 </html>
