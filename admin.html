@@ -3,24 +3,606 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель</title>
+    <title>Админ-панель — Стабильность Банк</title>
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <div class="animated-bg"></div>
     <div class="container">
-        <header>...</header>
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🏦</div>
+                <div>
+                    <h1>Стабильность <span>Банк</span></h1>
+                    <p><i class="fas fa-user-shield"></i> Администратор</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+            </div>
+        </header>
+
         <div id="alertsContainer"></div>
-        <div id="clientsList"></div>
-        <!-- Формы для операций (штраф, кредит, зарплата) -->
-        <!-- ... -->
+
+        <div class="tabs">
+            <div class="tab active" data-tab="clients"><i class="fas fa-users"></i> Игроки</div>
+            <div class="tab" data-tab="operations"><i class="fas fa-exchange-alt"></i> Операции</div>
+        </div>
+
+        <!-- Вкладка: Игроки -->
+        <div id="clientsTab" class="tab-content active">
+            <div class="clients-list" id="clientsList">
+                <div style="text-align:center;padding:40px;">Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- Вкладка: Операции -->
+        <div id="operationsTab" class="tab-content">
+            <div class="operations-panel">
+                <!-- Шаг 1: Выбор игрока -->
+                <div class="step">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div class="step-title">Выберите игрока</div>
+                    </div>
+                    <select id="playerSelect" class="form-control">
+                        <option value="">-- Выберите игрока --</option>
+                    </select>
+                    <div id="playerInfoBox" style="margin-top:20px;display:none;background:#f8f9fa;padding:20px;border-radius:16px;">
+                        <div><strong>💰 Баланс:</strong> <span id="playerBalance">0 ₽</span></div>
+                        <div><strong>🚨 Штрафы:</strong> <span id="playerFines">0 ₽</span></div>
+                        <div><strong>🏦 Кредиты:</strong> <span id="playerLoans">0 ₽</span></div>
+                        <div><strong>💼 Работа:</strong> <span id="playerJob">—</span></div>
+                    </div>
+                </div>
+
+                <!-- Шаг 2: Выбор операции -->
+                <div class="step" id="step2" style="display:none;">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Выберите операцию</div>
+                    </div>
+                    <div class="operations-grid">
+                        <div class="operation-card" data-op="deposit">💸 Пополнение</div>
+                        <div class="operation-card" data-op="withdraw">🏧 Снятие</div>
+                        <div class="operation-card" data-op="fine">🚨 Штраф</div>
+                        <div class="operation-card" data-op="cancel_fine">⛔ Отмена штрафа</div>
+                        <div class="operation-card" data-op="credit">🏦 Кредит</div>
+                        <div class="operation-card" data-op="salary">💰 Зарплата</div>
+                        <div class="operation-card" data-op="edit">✏️ Редактировать профиль</div>
+                    </div>
+                </div>
+
+                <!-- Шаг 3: Форма операции -->
+                <div class="step" id="step3" style="display:none;">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <div class="step-title" id="step3Title">Выполнение</div>
+                    </div>
+
+                    <!-- Пополнение -->
+                    <div id="depositForm" class="operation-form" style="display:none;">
+                        <input type="number" id="depositAmount" class="form-control" placeholder="Сумма">
+                        <input type="text" id="depositDesc" class="form-control" placeholder="Описание (опционально)" style="margin-top:10px;">
+                        <button class="btn btn-success" id="depositBtn" style="margin-top:15px;">Пополнить</button>
+                    </div>
+
+                    <!-- Снятие -->
+                    <div id="withdrawForm" class="operation-form" style="display:none;">
+                        <input type="number" id="withdrawAmount" class="form-control" placeholder="Сумма">
+                        <input type="text" id="withdrawDesc" class="form-control" placeholder="Описание (опционально)" style="margin-top:10px;">
+                        <button class="btn btn-danger" id="withdrawBtn" style="margin-top:15px;">Снять</button>
+                    </div>
+
+                    <!-- Штраф -->
+                    <div id="fineForm" class="operation-form" style="display:none;">
+                        <input type="number" id="fineAmount" class="form-control" placeholder="Сумма штрафа">
+                        <input type="text" id="fineReason" class="form-control" placeholder="Причина" style="margin-top:10px;">
+                        <button class="btn btn-danger" id="fineBtn" style="margin-top:15px;">Наложить штраф</button>
+                    </div>
+
+                    <!-- Отмена штрафа -->
+                    <div id="cancel_fineForm" class="operation-form" style="display:none;">
+                        <input type="number" id="cancelFineId" class="form-control" placeholder="ID штрафа (из списка)">
+                        <button class="btn btn-warning" id="cancelFineBtn" style="margin-top:15px;">Отменить штраф</button>
+                    </div>
+
+                    <!-- Кредит -->
+                    <div id="creditForm" class="operation-form" style="display:none;">
+                        <input type="number" id="creditAmount" class="form-control" placeholder="Сумма">
+                        <input type="number" id="creditPercent" class="form-control" placeholder="Процент %" value="10" style="margin-top:10px;">
+                        <button class="btn btn-success" id="creditBtn" style="margin-top:15px;">Выдать кредит</button>
+                    </div>
+
+                    <!-- Зарплата -->
+                    <div id="salaryForm" class="operation-form" style="display:none;">
+                        <div class="job-category">
+                            <div class="job-category-title"><i class="fas fa-briefcase"></i> Обычные работы</div>
+                            <div class="jobs-container" id="regularJobs"></div>
+                        </div>
+                        <div class="job-category">
+                            <div class="job-category-title"><i class="fas fa-landmark"></i> Гос. организации</div>
+                            <div class="jobs-container" id="govJobsContainer"></div>
+                        </div>
+                        <div id="ordersContainer" style="display:none;margin-top:20px;">
+                            <label>Количество заказов/клиентов:</label>
+                            <input type="number" id="ordersCount" class="form-control" value="1" min="1" max="9">
+                        </div>
+                        <div id="customSalaryContainer" style="display:none;margin-top:20px;">
+                            <label>Сумма контракта (₽):</label>
+                            <input type="number" id="customSalary" class="form-control" placeholder="Например, 5000">
+                        </div>
+                        <div id="allowancesContainer" class="allowance-panel" style="display:none;margin-top:20px;">
+                            <div class="allowance-title">✨ Надбавки / Тюнинг ТС</div>
+                            <div id="allowanceFields"></div>
+                        </div>
+                        <button class="btn btn-primary" id="salaryBtn" style="margin-top:25px;display:none;">
+                            <i class="fas fa-money-check-alt"></i> Выдать зарплату
+                        </button>
+                    </div>
+
+                    <!-- Редактирование профиля -->
+                    <div id="editForm" class="operation-form" style="display:none;">
+                        <input type="text" id="editUsername" class="form-control" placeholder="Новое имя пользователя">
+                        <input type="text" id="editJob" class="form-control" placeholder="Новая работа" style="margin-top:10px;">
+                        <input type="text" id="editJobData" class="form-control" placeholder="Данные работы (JSON)" style="margin-top:10px;">
+                        <button class="btn btn-primary" id="editBtn" style="margin-top:15px;">Обновить профиль</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
     <script type="module">
         import { supabase } from './js/supabase-client.js';
-        import { getCurrentUser } from './js/auth.js';
+        import { getCurrentUser, signOut } from './js/auth.js';
         import { getAllPlayers, updatePlayerProfile, depositFunds, withdrawFunds, issueFine, cancelFine, issueCredit, paySalary, getUserFines, getUserCredits, getUserTransactions } from './js/admin.js';
         import { formatCurrency, showAlert } from './js/utils.js';
-        // ... остальная логика отрисовки
+        import { regularJobs, govJobs } from './js/salary-calc.js';
+
+        // ---------- Глобальные переменные ----------
+        let currentUserId = null;
+        let currentOperation = null;
+        let selectedJob = null;
+        let selectedGovPosition = null;
+
+        // ---------- Проверка авторизации ----------
+        const user = await getCurrentUser();
+        if (!user || user.role !== 'admin') {
+            window.location.href = 'index.html';
+        }
+
+        // ---------- Выход ----------
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await signOut();
+            window.location.href = 'index.html';
+        });
+
+        // ---------- Вкладки ----------
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(this.dataset.tab + 'Tab').classList.add('active');
+                if (this.dataset.tab === 'operations') {
+                    populatePlayerSelect();
+                    resetOperationFlow();
+                }
+            });
+        });
+
+        // ---------- Загрузка списка игроков ----------
+        async function loadPlayers() {
+            try {
+                const players = await getAllPlayers();
+                renderPlayers(players);
+                populatePlayerSelect(players);
+            } catch (err) {
+                showAlert('Ошибка загрузки игроков: ' + err.message, 'error');
+            }
+        }
+
+        function renderPlayers(players) {
+            const container = document.getElementById('clientsList');
+            if (!players.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;">Нет игроков</div>';
+                return;
+            }
+            container.innerHTML = players.map(p => `
+                <div class="client-card" data-id="${p.id}">
+                    <div class="client-header">
+                        <div class="client-name">
+                            <div class="client-avatar">${(p.username || '?')[0]}</div>
+                            <div>
+                                <h2>${p.username || 'Без имени'}</h2>
+                                <div style="font-size:0.9rem;color:#6c757d;">ID: ${p.id.slice(0,8)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="client-balance">💰 ${formatCurrency(p.balance || 0)}</div>
+                    <div class="client-details">
+                        <div class="fines">
+                            <h3>🚨 Штрафы</h3>
+                            <div class="amount">${formatCurrency(p.fines_total || 0)}</div>
+                            <small>Активных: ${p.fines_count || 0}</small>
+                        </div>
+                        <div class="loans">
+                            <h3>🏦 Кредиты</h3>
+                            <div class="amount">${formatCurrency(p.loans_total || 0)}</div>
+                            <small>Активных: ${p.loans_count || 0}</small>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <button class="btn btn-sm btn-primary" onclick="window.selectPlayer('${p.id}')">
+                            <i class="fas fa-edit"></i> Управлять
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Добавляем кнопки "Управлять" в глобальный объект
+            window.selectPlayer = (id) => {
+                document.getElementById('playerSelect').value = id;
+                document.getElementById('playerSelect').dispatchEvent(new Event('change'));
+                // Переключаем на вкладку "Операции"
+                document.querySelector('.tab[data-tab="operations"]').click();
+            };
+        }
+
+        // ---------- Заполнение выпадающего списка игроков ----------
+        async function populatePlayerSelect(playersData) {
+            const select = document.getElementById('playerSelect');
+            const players = playersData || await getAllPlayers();
+            select.innerHTML = '<option value="">-- Выберите игрока --</option>' +
+                players.map(p => `<option value="${p.id}">${p.username || 'Без имени'} (${formatCurrency(p.balance || 0)})</option>`).join('');
+        }
+
+        // ---------- Обработка выбора игрока ----------
+        document.getElementById('playerSelect').addEventListener('change', async function() {
+            const id = this.value;
+            if (!id) {
+                document.getElementById('playerInfoBox').style.display = 'none';
+                resetOperationFlow();
+                return;
+            }
+            currentUserId = id;
+            // Загружаем дополнительную информацию
+            try {
+                const [fines, credits] = await Promise.all([
+                    getUserFines(id),
+                    getUserCredits(id)
+                ]);
+                const finesTotal = fines.reduce((sum, f) => sum + Number(f.amount), 0);
+                const creditsTotal = credits.reduce((sum, c) => sum + Number(c.remaining), 0);
+                document.getElementById('playerBalance').textContent = formatCurrency(
+                    (await supabase.from('profiles').select('balance').eq('id', id).single()).data.balance || 0
+                );
+                document.getElementById('playerFines').textContent = formatCurrency(finesTotal);
+                document.getElementById('playerLoans').textContent = formatCurrency(creditsTotal);
+                document.getElementById('playerJob').textContent = (await supabase.from('profiles').select('job').eq('id', id).single()).data.job || '—';
+                document.getElementById('playerInfoBox').style.display = 'block';
+                document.getElementById('step2').style.display = 'block';
+                document.getElementById('step3').style.display = 'none';
+                // Сброс выбранной операции
+                document.querySelectorAll('.operation-card').forEach(c => c.classList.remove('selected'));
+                currentOperation = null;
+                // Очистка формы зарплаты
+                document.getElementById('salaryForm').style.display = 'none';
+                document.getElementById('salaryBtn').style.display = 'none';
+            } catch (err) {
+                showAlert('Ошибка загрузки данных игрока: ' + err.message, 'error');
+            }
+        });
+
+        // ---------- Выбор операции ----------
+        document.querySelectorAll('.operation-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.operation-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                currentOperation = this.dataset.op;
+                document.getElementById('step3').style.display = 'block';
+                document.getElementById('step3Title').textContent = this.textContent.trim();
+                // Скрыть все формы
+                document.querySelectorAll('.operation-form').forEach(f => f.style.display = 'none');
+                // Показать нужную
+                const formId = currentOperation + 'Form';
+                const form = document.getElementById(formId);
+                if (form) {
+                    form.style.display = 'block';
+                    // Особые действия для зарплаты
+                    if (currentOperation === 'salary') {
+                        initSalaryUI();
+                    } else {
+                        document.getElementById('salaryBtn').style.display = 'none';
+                    }
+                } else {
+                    showAlert('Форма для этой операции не найдена', 'error');
+                }
+            });
+        });
+
+        // ---------- Инициализация UI для зарплаты ----------
+        function initSalaryUI() {
+            const salaryForm = document.getElementById('salaryForm');
+            salaryForm.style.display = 'block';
+            document.getElementById('salaryBtn').style.display = 'none';
+            // Рендерим работы
+            const regContainer = document.getElementById('regularJobs');
+            regContainer.innerHTML = regularJobs.map(job => `
+                <div class="job-item" data-job='${JSON.stringify(job)}'>
+                    <div class="job-emoji">${job.emoji}</div>
+                    <div class="job-name">${job.name}</div>
+                    <div class="job-salary">${job.type === 'fixed' ? job.salary + '₽' : job.type === 'variable' ? 'от 80₽/заказ' : job.type === 'taxi' ? 'от 180₽/клиент' : 'контракт'}</div>
+                </div>
+            `).join('');
+
+            const govContainer = document.getElementById('govJobsContainer');
+            govContainer.innerHTML = govJobs.map(org => `
+                <div class="job-item" data-org='${JSON.stringify(org)}'>
+                    <div class="job-emoji">${org.emoji}</div>
+                    <div class="job-name">${org.organization}</div>
+                    <div class="job-salary">${org.positions.length} должностей</div>
+                </div>
+            `).join('');
+
+            // Обработчики для обычных работ
+            document.querySelectorAll('#regularJobs .job-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    document.querySelectorAll('#regularJobs .job-item, #govJobsContainer .job-item').forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    const job = JSON.parse(this.dataset.job);
+                    selectedJob = job;
+                    selectedGovPosition = null;
+                    setupSalaryForm(job);
+                });
+            });
+
+            // Обработчики для гос. организаций (выбор должности через модалку)
+            document.querySelectorAll('#govJobsContainer .job-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    const org = JSON.parse(this.dataset.org);
+                    // Создаём модалку с должностями
+                    const modal = document.createElement('div');
+                    modal.className = 'modal';
+                    modal.style.display = 'flex';
+                    modal.innerHTML = `
+                        <div class="modal-content">
+                            <h3>${org.organization}</h3>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
+                                ${org.positions.map(pos => `
+                                    <div class="job-item" data-pos='${JSON.stringify({name:pos, org:org.organization})}'>
+                                        <div class="job-name">${pos}</div>
+                                        <div class="job-salary">(оклад)</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="btn" id="closePosModal">Отмена</button>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    modal.querySelectorAll('[data-pos]').forEach(posEl => {
+                        posEl.addEventListener('click', function() {
+                            const pos = JSON.parse(this.dataset.pos);
+                            selectedJob = { name: `${pos.org} - ${pos.name}`, type: 'gov', salary: 0 };
+                            selectedGovPosition = pos;
+                            document.querySelectorAll('#regularJobs .job-item, #govJobsContainer .job-item').forEach(i => i.classList.remove('selected'));
+                            el.classList.add('selected');
+                            // Передаём в setupSalaryForm как gov-работу
+                            setupSalaryForm({ name: pos.name, type: 'gov', org: pos.org });
+                            modal.remove();
+                        });
+                    });
+                    modal.querySelector('#closePosModal').addEventListener('click', () => modal.remove());
+                });
+            });
+        }
+
+        function setupSalaryForm(job) {
+            // Скрыть лишние контейнеры
+            document.getElementById('ordersContainer').style.display = 'none';
+            document.getElementById('customSalaryContainer').style.display = 'none';
+            document.getElementById('allowancesContainer').style.display = 'none';
+            document.getElementById('salaryBtn').style.display = 'block';
+
+            if (job.type === 'variable' || job.type === 'taxi') {
+                document.getElementById('ordersContainer').style.display = 'block';
+                const max = job.type === 'variable' ? 9 : 7;
+                document.getElementById('ordersCount').max = max;
+                document.getElementById('ordersCount').value = 1;
+            } else if (job.type === 'custom') {
+                document.getElementById('customSalaryContainer').style.display = 'block';
+            } else if (job.type === 'gov') {
+                // Для гос. должностей ничего дополнительного не требуется
+            }
+
+            // Надбавки для определённых работ
+            const jobsWithAllowances = ['Такси', 'Автобус', 'Развозчик', 'Дальнобойщик'];
+            if (jobsWithAllowances.includes(job.name)) {
+                buildAllowanceUI(job.name);
+            } else {
+                document.getElementById('allowancesContainer').style.display = 'none';
+            }
+        }
+
+        function buildAllowanceUI(jobName) {
+            const container = document.getElementById('allowanceFields');
+            container.innerHTML = '';
+            if (jobName === 'Такси') {
+                container.innerHTML = `
+                    <label>Класс ТС:</label>
+                    <select id="taxiClass" class="form-control">
+                        <option value="low">Низкий (+0₽)</option>
+                        <option value="medium">Средний (+300₽)</option>
+                        <option value="high">Высокий (+600₽)</option>
+                        <option value="business">Бизнес (+1200₽)</option>
+                    </select>
+                    <label style="margin-top:12px;">Тюнинг:</label>
+                    <div><label><input type="checkbox" id="musicTuning"> Музыкальная система (×1.2)</label></div>
+                    <div><label><input type="checkbox" id="tint1"> Тонировка I (×1.3)</label></div>
+                    <div><label><input type="checkbox" id="tint2"> Тонировка II (×1.4)</label></div>
+                `;
+            } else if (jobName === 'Автобус') {
+                container.innerHTML = `
+                    <label>Доп. комфорт:</label>
+                    <select id="busTuning" class="form-control">
+                        <option value="1">Без тюнинга (×1)</option>
+                        <option value="1.3">VIP-салон (×1.3)</option>
+                        <option value="1.4">Улучшенная шумоизоляция (×1.4)</option>
+                        <option value="1.5">Климат-контроль+мониторы (×1.5)</option>
+                    </select>
+                `;
+            } else if (jobName === 'Развозчик' || jobName === 'Дальнобойщик') {
+                container.innerHTML = `
+                    <label>Тюнинг:</label>
+                    <div><label><input type="checkbox" id="trunkTuning"> Улучшенный багажник (×1.2)</label></div>
+                    <div><label><input type="checkbox" id="airSuspTuning"> Пневмоподвеска (×1.5)</label></div>
+                `;
+            }
+            document.getElementById('allowancesContainer').style.display = 'block';
+        }
+
+        // ---------- Обработчики кнопок операций ----------
+        document.getElementById('depositBtn').addEventListener('click', async () => {
+            if (!currentUserId) return showAlert('Выберите игрока', 'error');
+            const amount = parseFloat(document.getElementById('depositAmount').value);
+            if (!amount || amount <= 0) return showAlert('Введите корректную сумму', 'error');
+            const desc = document.getElementById('depositDesc').value || 'Пополнение админом';
+            try {
+                await depositFunds(currentUserId, amount, desc);
+                showAlert(`✅ Пополнено ${formatCurrency(amount)}`, 'success');
+                refreshPlayerInfo();
+            } catch (err) {
+                showAlert('Ошибка: ' + err.message, 'error');
+            }
+        });
+
+        document.getElementById('withdrawBtn').addEventListener('click', async () => {
+            if (!currentUserId) return showAlert('Выберите игрока', 'error');
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            if (!amount || amount <= 0) return showAlert('Введите корректную сумму', 'error');
+            const desc = document.getElementById('withdrawDesc').value || 'Снятие админом';
+            try {
+                await withdrawFunds(currentUserId, amount, desc);
+                showAlert(`✅ Снято ${formatCurrency(amount)}`, 'success');
+                refreshPlayerInfo();
+            } catch (err) {
+                showAlert('Ошибка: ' + err.message, 'error');
+            }
+        });
+
+        document.getElementById('fineBtn').addEventListener('click', async () => {
+            if (!currentUserId) return showAlert('Выберите игрока', 'error');
+            const amount = parseFloat(document.getElementById('fineAmount').value);
+            const reason = document.getElementById('fineReason').value.trim();
+            if (!amount || amount <= 0) return showAlert('Введите сумму штрафа', 'error');
+            if (!reason) return showAlert('Укажите причину', 'error');
+            try {
+                await issueFine(currentUserId, amount, reason, user.id);
+                showAlert(`🚨 Штраф ${formatCurrency(amount)} наложен`, 'success');
+                refreshPlayerInfo();
+            } catch (err) {
+                showAlert('Ошибка: ' + err.message, 'error');
+            }
+        });
+
+        document.getElementById('cancelFineBtn').addEventListener('click', async () => {
+            if (!currentUserId) return showAlert('Выберите игрока', 'error');
+            const fineId = parseInt(document.getElementById('cancelFineId').value);
+            if (!fineId) return showAlert('Введите ID штрафа', 'error');
+            try {
+                await cancelFine(fineId, user.id);
+                showAlert(`✅ Штраф #${fineId} отменён`, 'success');
+                refreshPlayerInfo();
+            } catch (err) {
+                showAlert('Ошибка: ' + err.message, 'error');
+            }
+        });
+
+        document.getElementById('creditBtn').addEventListener('click', async () => {
+            if (!currentUserId) return showAlert('Выберите игрока', 'error');
+            const amount = parseFloat(document.getElementById('creditAmount').value);
+            const percent = parseFloat(document.getElementById('creditPercent').value) || 10;
+            if (!amount || amount <= 0) return showAlert('Введите сумму кредита', 'error');
+            try {
+                await issueCredit(currentUserId, amount, percent);
+                showAlert(`💰 Кредит ${formatCurrency(amount)} под ${percent}% выдан`, 'success');
+                refreshPlayerInfo();
+            } catch (err) {
+                showAlert('Ошибка: ' + err.message, 'error');
+            }
+        });
+
+        document.getElementById('salaryBtn').addEventListener('click', async () => {
+            if (!currentUserId || !selectedJob) return showAlert('Выберите работу', 'error');
+            let orders = 1, customVal = 0;
+            if (selectedJob.type === 'variable' || selectedJob.type === 'taxi') {
+                orders = parseInt(document.getElementById('ordersCount').value) || 1;
+            }
+            if (selectedJob.type === 'custom') {
+                customVal = parseFloat(document.getElementById('customSalary').value);
+                if (!customVal || customVal <= 0) return showAlert('Укажите сумму контракта', 'error');
+            }
+            // Формируем параметры для функции calculate_and_pay_salary
+            const params = { orders, contract_amount: customVal };
+            // Для гос. должностей передаём позицию
+            if (selectedGovPosition) {
+                params.position = selectedGovPosition.name;
+            }
+            try {
+                const amount = await paySalary(currentUserId, selectedJob.name, params);
+                showAlert(`💰 Зарплата ${formatCurrency(amount)} начислена`, 'success');
+                refreshPlayerInfo();
+            } catch (err) {
+                showAlert('Ошибка: ' + err.message, 'error');
+            }
+        });
+
+        document.getElementById('editBtn').addEventListener('click', async () => {
+            if (!currentUserId) return showAlert('Выберите игрока', 'error');
+            const updates = {};
+            const username = document.getElementById('editUsername').value.trim();
+            const job = document.getElementById('editJob').value.trim();
+            const jobData = document.getElementById('editJobData').value.trim();
+            if (username) updates.username = username;
+            if (job) updates.job = job;
+            if (jobData) {
+                try { updates.job_data = JSON.parse(jobData); } catch (e) { return showAlert('Неверный JSON в job_data', 'error'); }
+            }
+            if (Object.keys(updates).length === 0) return showAlert('Заполните хотя бы одно поле', 'error');
+            try {
+                await updatePlayerProfile(currentUserId, updates);
+                showAlert('✅ Профиль обновлён', 'success');
+                refreshPlayerInfo();
+            } catch (err) {
+                showAlert('Ошибка: ' + err.message, 'error');
+            }
+        });
+
+        // ---------- Вспомогательные функции ----------
+        async function refreshPlayerInfo() {
+            // Обновляем информацию о выбранном игроке
+            const select = document.getElementById('playerSelect');
+            if (select.value) {
+                select.dispatchEvent(new Event('change'));
+            }
+            // Также перезагружаем список игроков
+            await loadPlayers();
+        }
+
+        function resetOperationFlow() {
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('step3').style.display = 'none';
+            document.querySelectorAll('.operation-card').forEach(c => c.classList.remove('selected'));
+            currentOperation = null;
+            document.querySelectorAll('.operation-form').forEach(f => f.style.display = 'none');
+            document.getElementById('salaryBtn').style.display = 'none';
+        }
+
+        // ---------- Загрузка при старте ----------
+        await loadPlayers();
     </script>
 </body>
 </html>
