@@ -1,6 +1,6 @@
 import { supabase } from './supabase-client.js';
 
-// Получить всех игроков (только админ)
+// Получить всех игроков
 export async function getAllPlayers() {
   const { data, error } = await supabase
     .from('profiles')
@@ -10,7 +10,7 @@ export async function getAllPlayers() {
   return data;
 }
 
-// Обновить профиль игрока (username, job, job_data)
+// Обновить профиль
 export async function updatePlayerProfile(userId, updates) {
   const { error } = await supabase
     .from('profiles')
@@ -19,7 +19,7 @@ export async function updatePlayerProfile(userId, updates) {
   if (error) throw error;
 }
 
-// Пополнение баланса (админ)
+// Пополнение баланса
 export async function depositFunds(userId, amount, description = 'Пополнение админом') {
   const { error } = await supabase.rpc('deposit_funds', {
     p_user_id: userId,
@@ -29,7 +29,7 @@ export async function depositFunds(userId, amount, description = 'Пополне
   if (error) throw error;
 }
 
-// Снятие средств (админ)
+// Снятие средств
 export async function withdrawFunds(userId, amount, description = 'Снятие админом') {
   const { error } = await supabase.rpc('withdraw_funds', {
     p_user_id: userId,
@@ -111,5 +111,21 @@ export async function getUserTransactions(userId) {
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) throw error;
+  return data;
+}
+
+// ---------- СОЗДАНИЕ ИГРОКА (через Edge Function) ----------
+export async function createPlayer(email, password, username) {
+  const { data, error } = await supabase.functions.invoke('create-player', {
+    body: { email, password, username }
+  });
+  if (error) {
+    // Если функция ещё не развёрнута, выведем понятную ошибку
+    if (error.message?.includes('function not found')) {
+      throw new Error('Edge Function "create-player" не развёрнута. Разверните её через supabase functions deploy create-player');
+    }
+    throw error;
+  }
+  if (data?.error) throw new Error(data.error);
   return data;
 }
